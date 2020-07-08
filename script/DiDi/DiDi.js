@@ -147,7 +147,7 @@ function Checkin() {
                         detail += '\n' + message
                     }
 //                     $cmp.log("DiDi source_id : \n" + result.data.share.source_id)
-                    $cmp.log("DiDi source_id : \n" + result.data)
+                    $cmp.log("DiDi source_id : \n" + result.data.share)
                 } else if (result && result.errno == 101) {
                     subTitle += '签到失败‼️ 城市代码错误。'
                     detail += '请重新获取 Token。\n' + result.errmsg
