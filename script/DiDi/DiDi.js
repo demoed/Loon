@@ -50,13 +50,11 @@ hostname = as.xiaojukeji.com
 获取完 Token 后可不注释 rewrite / hostname，Token 更新时会弹窗。若因 MitM 导致该软件或小程序网络不稳定，可注释掉 hostname。
 */
 
-const aff = false //若不想提供 aff 请改为 false。
 const mainURL = 'https://bosp-api.xiaojukeji.com/wechat/benefit/public/index?'
 const TokenName = '滴滴出行'
 const TokenKey = 'DiDi'
 const CityKey = 'DiDi_city'
 const reg = /^https:\/\/as\.xiaojukeji\.com\/ep\/as\/toggles\?(.*)location_cityid=(\d*)&(.*)ticket=(.*)&/
-const source_id = ['WTZs7tfSPrADJ8uLRVMOKA%253D%253D', 'DRKV%252BEcE4Gqn%252BH1mKz2HQg%253D%253D']
 const today = new Date().getFullYear() + "-" + ("00" + Number(new Date().getMonth() + 1)).substr(-2) + "-" + ("00" + new Date().getDate()).substr(-2)
 const $cmp = compatibility()
 
@@ -121,11 +119,7 @@ function Checkin() {
     let subTitle = ''
     let detail = ''
     let CheckinURL = mainURL + 'city_id=' + $cmp.read("DiDi_city")
-    if (aff) {
-        let s_i = Choose(source_id)
-        $cmp.log("DiDi aff : \n" + s_i)
-        CheckinURL += '&share_source_id=' + s_i + '&share_date=' + today
-    }
+    
     const didi = {
         url: CheckinURL,
         headers: {
@@ -152,7 +146,8 @@ function Checkin() {
                     for (let message of result.data.notification.reverse()) {
                         detail += '\n' + message
                     }
-                    $cmp.log("DiDi source_id : \n" + result.data.share.source_id)
+//                     $cmp.log("DiDi source_id : \n" + result.data.share.source_id)
+                    $cmp.log("DiDi source_id : \n" + result.data)
                 } else if (result && result.errno == 101) {
                     subTitle += '签到失败‼️ 城市代码错误。'
                     detail += '请重新获取 Token。\n' + result.errmsg
