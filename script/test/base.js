@@ -1,9 +1,9 @@
 // 初始化一个对象
-cap = compatibility()
+cap = init()
 
 
 // 发出提示
-cap.notify("测试题目","测试子标题","这里是具体的内容")
+cap.msg("测试题目","测试子标题","这里是具体的内容")
 
 
 
@@ -25,108 +25,46 @@ cap.done()
 
 
 
-function compatibility() {
-    const isRequest = typeof $request != "undefined"
-    const isSurge = typeof $httpClient != "undefined"
-    const isQuanX = typeof $task != "undefined"
-    const isJSBox = typeof $app != "undefined" && typeof $http != "undefined"
-    const isNode = typeof require == "function" && !isJSBox
-    const node = (() => {
-        if (isNode) {
-            const request = require('request')
-            return ({request})
-        } else {
-            return (null)
-        }
-    })()
-    const notify = (title, subtitle, message) => {
-        if (isQuanX) $notify(title, subtitle, message)
-        if (isSurge) $notification.post(title, subtitle, message)
-        if (isNode) log(title+subtitle+message)
-        if (isJSBox) $push.schedule({title: title, body: subtitle?subtitle+"\n"+message:message})
+function init() {
+  isSurge = () => {
+    return undefined === this.$httpClient ? false : true
+  }
+  isQuanX = () => {
+    return undefined === this.$task ? false : true
+  }
+  getdata = (key) => {
+    if (isSurge()) return $persistentStore.read(key)
+    if (isQuanX()) return $prefs.valueForKey(key)
+  }
+  setdata = (key, val) => {
+    if (isSurge()) return $persistentStore.write(key, val)
+    if (isQuanX()) return $prefs.setValueForKey(key, val)
+  }
+  msg = (title, subtitle, body) => {
+    if (isSurge()) $notification.post(title, subtitle, body)
+    if (isQuanX()) $notify(title, subtitle, body)
+  }
+  log = (message) => console.log(message)
+  get = (url, cb) => {
+    if (isSurge()) {
+      $httpClient.get(url, cb)
     }
-    const write = (value, key) => {
-        if (isQuanX) return $prefs.setValueForKey(value, key)
-        if (isSurge) return $persistentStore.write(value, key)
+    if (isQuanX()) {
+      url.method = 'GET'
+      $task.fetch(url).then((resp) => cb(null, {}, resp.body))
     }
-    const read = (key) => {
-        if (isQuanX) return $prefs.valueForKey(key)
-        if (isSurge) return $persistentStore.read(key)
+  }
+  post = (url, cb) => {
+    if (isSurge()) {
+      $httpClient.post(url, cb)
     }
-    const adapterStatus = (response) => {
-        if (response) {
-            if (response.status) {
-                response["statusCode"] = response.status
-            } else if (response.statusCode) {
-                response["status"] = response.statusCode
-            }
-        }
-        return response
+    if (isQuanX()) {
+      url.method = 'POST'
+      $task.fetch(url).then((resp) => cb(null, {}, resp.body))
     }
-    const get = (options, callback) => {
-        if (isQuanX) {
-            if (typeof options == "string") options = { url: options }
-            options["method"] = "GET"
-            $task.fetch(options).then(response => {
-                callback(null, adapterStatus(response), response.body)
-            }, reason => callback(reason.error, null, null))
-        }
-        if (isSurge) $httpClient.get(options, (error, response, body) => {
-            callback(error, adapterStatus(response), body)
-        })
-        if (isNode) {
-            node.request(options, (error, response, body) => {
-                callback(error, adapterStatus(response), body)
-            })
-        }
-        if (isJSBox) {
-            if (typeof options == "string") options = {url: options}
-            options["header"] = options["headers"]
-            options["handler"] = function (resp) {
-                let error = resp.error
-                if (error) error = JSON.stringify(resp.error)
-                let body = resp.data
-                if (typeof body == "object") body = JSON.stringify(resp.data)
-                callback(error, adapterStatus(resp.response), body)
-            }
-            $http.get(options)
-        }
-    }
-    const post = (options, callback) => {
-        if (isQuanX) {
-            if (typeof options == "string") options = { url: options }
-            options["method"] = "POST"
-            $task.fetch(options).then(response => {
-                callback(null, adapterStatus(response), response.body)
-            }, reason => callback(reason.error, null, null))
-        }
-        if (isSurge) {
-            $httpClient.post(options, (error, response, body) => {
-                callback(error, adapterStatus(response), body)
-            })
-        }
-        if (isNode) {
-            node.request.post(options, (error, response, body) => {
-                callback(error, adapterStatus(response), body)
-            })
-        }
-        if (isJSBox) {
-            if (typeof options == "string") options = {url: options}
-            options["header"] = options["headers"]
-            options["handler"] = function (resp) {
-                let error = resp.error
-                if (error) error = JSON.stringify(resp.error)
-                let body = resp.data
-                if (typeof body == "object") body = JSON.stringify(resp.data)
-                callback(error, adapterStatus(resp.response), body)
-            }
-            $http.post(options)
-        }
-    }
-    const log = (message) => console.log(message)
-    const done = (value = {}) => {
-        if (isQuanX) isRequest ? $done(value) : null
-        if (isSurge) isRequest ? $done(value) : $done()
-    }
-    return { isQuanX, isSurge, isJSBox, isRequest, notify, write, read, get, post, log, done }
+  }
+  done = (value = {}) => {
+    $done(value)
+  }
+  return { isSurge, isQuanX, msg, log, getdata, setdata, get, post, done }
 }
