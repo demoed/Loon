@@ -2,7 +2,7 @@
  * @Author: lxk0301 
  * @Date: 2020-10-21 17:04:04 
  * @Last Modified by: lxk0301
- * @Last Modified time: 2020-10-22 09:35:04
+ * @Last Modified time: 2020-10-31 00:35:04
  */
 /**
  星推官脚本 https://raw.githubusercontent.com/lxk0301/scripts/master/jd_xtg.js
@@ -14,15 +14,18 @@
  一共17个活动，耗时比较久，surge请加大延迟时间
  支持京东双账号
  脚本兼容: QuantumultX, Surge, Loon, JSBox, Node.js
- 
+ // quantumultx
+ [task_local]
+ #京东星推官
+ 2 0 * * * https://raw.githubusercontent.com/lxk0301/scripts/master/jd_xtg.js, tag=京东星推官, enabled=true
  // Loon
  [Script]
  cron "2 0 * * *" script-path=https://raw.githubusercontent.com/lxk0301/scripts/master/jd_xtg.js,tag=京东星推官
  // Surge
  京东星推官 = type=cron,cronexp=2 0 * * *,wake-system=1,timeout=320,script-path=https://raw.githubusercontent.com/lxk0301/scripts/master/jd_xtg.js
  */
-const $ = new Env('星推官');
-
+const $ = new Env('京东星推官');
+const activeEndTime = '2020/11/13 00:00:00';//活动结束时间
 const notify = $.isNode() ? require('./sendNotify') : '';
 //Node.js用户请在jdCookie.js处填写京东ck;
 const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
@@ -56,24 +59,26 @@ const starID = [
   'lgyangzishan',
   'laobansongweilong',
   'haiermaoxiaotong',
+  "skgwangyibo"
 ];
 const shareID = [
-//   'e646c144-28a7-4b1b-8145-5b0dbff107ec',
-//   'b3fcb734-cbdd-4436-9f92-b13b445fc253',
-//   'e2d63b19-19d6-4a20-b2af-74b828e703d0',
-//   'a7a3b9b7-2872-4244-a627-3b82c271dee7',
-//   'f7b521e7-5306-4908-ba8a-df2d221bdd9d',
-//   'd17ec374-70d4-49d5-8673-7093e61f904c',
-//   '915b9567-dc88-4389-8be9-ecc25588353a',
-//   '7abdc8f4-d8f4-497f-8daa-cdab01cf645c',
-//   '50ecc8de-1ee5-4420-bbb8-1136d86d80db',
-//   'fd0770e1-5007-45c1-8d69-402e02ff9a52',
-//   'cb9e9a59-a86b-4a0d-a308-4503fe5baaa4',
-//   '93b3afeb-a18c-437c-b5ca-fbd9f389671d',
-//   '8778793c-e9ad-4339-a709-723ae3ebde8e',
-//   '921c376e-8cc5-4236-8242-ff8bb1b88a95',
-//   '8b3ce203-4b10-4c36-a87d-da8c82efe362',
-//   'c8e1feb3-6ab1-4410-8444-1de8bd22e041',
+  // 'e646c144-28a7-4b1b-8145-5b0dbff107ec',
+  // 'b3fcb734-cbdd-4436-9f92-b13b445fc253',
+  // 'e2d63b19-19d6-4a20-b2af-74b828e703d0',
+  // 'a7a3b9b7-2872-4244-a627-3b82c271dee7',
+  // 'f7b521e7-5306-4908-ba8a-df2d221bdd9d',
+  // 'd17ec374-70d4-49d5-8673-7093e61f904c',
+  // '915b9567-dc88-4389-8be9-ecc25588353a',
+  // '7abdc8f4-d8f4-497f-8daa-cdab01cf645c',
+  // '50ecc8de-1ee5-4420-bbb8-1136d86d80db',
+  // 'fd0770e1-5007-45c1-8d69-402e02ff9a52',
+  // 'cb9e9a59-a86b-4a0d-a308-4503fe5baaa4',
+  // '93b3afeb-a18c-437c-b5ca-fbd9f389671d',
+  // '8778793c-e9ad-4339-a709-723ae3ebde8e',
+  // '921c376e-8cc5-4236-8242-ff8bb1b88a95',
+  // '8b3ce203-4b10-4c36-a87d-da8c82efe362',
+  // 'c8e1feb3-6ab1-4410-8444-1de8bd22e041',
+  // "dd6b5270-3e5e-436d-be0f-295a8604cf47"
 ];
 const JD_API_HOST = 'https://urvsaggpt.m.jd.com/guardianstar';
 !(async () => {
@@ -86,21 +91,28 @@ const JD_API_HOST = 'https://urvsaggpt.m.jd.com/guardianstar';
       cookie = cookiesArr[i];
       $.UserName = decodeURIComponent(cookie.match(/pt_pin=(.+?);/) && cookie.match(/pt_pin=(.+?);/)[1])
       $.index = i + 1;
-      console.log(`\n开始【京东账号${$.index}】${$.UserName}\n`);
-      console.log(`一共${starID.length}个${$.name}任务，耗时会很久，请提前知晓，PC测试耗时：100秒`)
+      $.beanCount = 0;
+      $.jdNum = 0;
+      console.log(`\n===============开始【京东账号${$.index}】${$.UserName}==================\n`);
+      console.log(`一共${starID.length}个${$.name}任务，耗时会很久，请提前知晓`)
+      const beforeTotal = await TotalBean();
+      $.beanCount = beforeTotal && beforeTotal['base'].jdNum;
+      for (let index = 0; index < starID.length; index ++) {
+        $.activeId = starID[index];
+        $.j = index;
+        await JD_XTG();
+      }
+      console.log(`\n等待10秒后，再去领取奖励\n`)
+      console.log(`做任务之前京豆总计:${$.beanCount}`)
+      await $.wait(10000);
       for (let index = 0; index < starID.length; index ++) {
         $.activeId = starID[index];
         $.j = index;
         await JD_XTG();
         await doSupport(shareID[index]);
       }
-      console.log(`\n延迟10秒后，再去领取奖励\n`)
-      await $.wait(10000);
-      for (let index = 0; index < starID.length; index ++) {
-        $.activeId = starID[index];
-        $.j = index;
-        await JD_XTG();
-      }
+      const afterTotal = await TotalBean();
+      $.jdNum = afterTotal['base'].jdNum;
       await showMsg();
     }
   }
@@ -111,13 +123,27 @@ const JD_API_HOST = 'https://urvsaggpt.m.jd.com/guardianstar';
     .finally(() => {
       $.done();
     })
-function showMsg() {
-  $.msg($.name, '', `京东账号${$.index}${$.UserName}\n星推官任务已做完\n活动链接https://prodev.m.jd.com/mall/active/3gSzKSnvrrhYushciUpzHcDnkYE3/index.html`, `{"open-url": "https://prodev.m.jd.com/mall/active/3gSzKSnvrrhYushciUpzHcDnkYE3/index.html"}`)
+async function showMsg() {
+  console.log(`\n做任务之前京豆总计:${$.beanCount}`)
+  console.log(`做完任务后京豆总计:${$.jdNum}`);
+  console.log(`活动活动京豆数量:${$.jdNum - $.beanCount}`);
+  let nowTime = Date.now();
+  const zone = new Date().getTimezoneOffset();
+  if (zone === 0) {
+    nowTime += 28800000;//UTC-0时区加上8个小时
+  }
+  if (nowTime > new Date(activeEndTime).getTime()) {
+    $.msg($.name, '活动已结束', `请删除或禁用此脚本\n如果帮助到您可以点下🌟STAR鼓励我一下,谢谢\n咱江湖再见\nhttps://github.com/lxk0301/scripts`, {"open-url": "https://github.com/lxk0301/scripts"});
+    if ($.isNode()) await notify.sendNotify($.name + '活动已结束', `请删除此脚本\n如果帮助到您可以点下🌟STAR鼓励我一下,谢谢\n咱江湖再见\nhttps://github.com/lxk0301/scripts`)
+  } else {
+    $.msg($.name, `账号${$.index} ${$.UserName}`, `任务已做完\n做任务之前京豆总计:${$.beanCount}\n做完任务后京豆总计:${$.jdNum}\n${($.jdNum - $.beanCount) > 0 ? `获得京豆：${$.jdNum - $.beanCount}京豆 🐶(仅供参考)\n` : ''}京豆先到先得\n活动地址点击弹窗跳转后即可查看\n注：如未获得京豆就是已被分完`, {"open-url": "https://prodev.m.jd.com/mall/active/3gSzKSnvrrhYushciUpzHcDnkYE3/index.html"})
+    if ($.isNode()) await notify.sendNotify(`${$.name}`, `账号${$.index} ${$.UserName}\n任务已做完\n做任务之前京豆总计:${$.beanCount}\n做完任务后京豆总计:${$.jdNum}\n${($.jdNum - $.beanCount) > 0 ? `获得京豆：${$.jdNum - $.beanCount}京豆 🐶(仅供参考)\n` : ''}京豆先到先得\n注：如未获得京豆就是已被分完\n活动地址：https://prodev.m.jd.com/mall/active/3gSzKSnvrrhYushciUpzHcDnkYE3/index.html`)
+  }
 }
 async function JD_XTG() {
   await getHomePage();
-  if ($.homeData.code === 200) {
-    const { shopList, venueList, productList, shareId } = $.homeData.data[0];
+  if ($.homeData && $.homeData.code === 200) {
+    const { shopList, venueList, productList, orderSkuList, shareId } = $.homeData.data[0];
     console.log(`\n===========活动${$.j + 1}-[${starID[$.j]}] 助力码==========\n${shareId}\n`);
     for (let item of shopList) {
       console.log(`\n任务一：关注${item['shopName']}`)
@@ -142,7 +168,7 @@ async function JD_XTG() {
       // }
     }
     for (let item1 of venueList) {
-      console.log(`\n任务二：逛逛${item1['venueName']}`)
+      console.log(`\n任务二：逛逛[${item1['venueName']}]-${item1['venueStatus']  !== 3 ? '' : '已做完'}`)
       if (item1['venueStatus'] === 1) {
         await doTask('venue', item1['venueId'], 1);
       }
@@ -151,7 +177,7 @@ async function JD_XTG() {
       }
     }
     for (let item2 of productList) {
-      console.log(`\n任务三：逛逛${item2['productName']}`)
+      console.log(`\n任务三：逛逛[${item2['productName']}]-${item2['productStatus']  !== 3 ? '' : '已做完'}`)
       if (item2['productStatus'] === 1) {
         await doTask('product', item2['productId'], 1);
       }
@@ -159,9 +185,21 @@ async function JD_XTG() {
         await doTask('product', item2['productId'], 2);
       }
     }
+    //付定金 TODO
+    // for (let item3 of orderSkuList) {
+    //   await doTask('order', item3['skuId'], 1);
+    //   await doTask('order', item3['skuId'], 2);
+    //   await doTask('order', item3['skuId'], 3);
+    //   await doTask('order', item3['skuId'], 0);
+    //
+    //   await doTask('order', item3['skuId'], 2);
+    //   await doTask('order', item3['skuId'], 1);
+    // }
     console.log(`\n开始抽奖\n`)
     await getDayPrizeStatus(4, `${$.activeId}#1`, 3);
     await getDayPrizeStatus(1, `${$.activeId}#2`, 3);
+  } else {
+    console.log(`京东服务器返回无数据！`)
   }
 }
 function getHomePage() {
@@ -174,6 +212,8 @@ function getHomePage() {
         } else {
           if (data) {
             $.homeData = JSON.parse(data);
+          } else {
+            console.log(`京东服务器返回空数据`)
           }
         }
       } catch (e) {
@@ -227,8 +267,46 @@ function doSupport(shareId) {
           console.log(`${JSON.stringify(err)}`)
           console.log(`${$.name} API请求失败，请检查网路重试`)
         } else {
-          console.log(`助力结果:${data}`);
-          data = JSON.parse(data);
+          // console.log(`\n助力结果:${data}`);
+          // data = JSON.parse(data);
+        }
+      } catch (e) {
+        $.logErr(e, resp)
+      } finally {
+        resolve();
+      }
+    })
+  })
+}
+function TotalBean() {
+  return new Promise(async resolve => {
+    const options = {
+      "url": `https://wq.jd.com/user/info/QueryJDUserInfo?sceneval=2`,
+      "headers": {
+        "Accept": "application/json,text/plain, */*",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "zh-cn",
+        "Connection": "keep-alive",
+        "Cookie": cookie,
+        "Referer": "https://wqs.jd.com/my/jingdou/my.shtml?sceneval=2",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
+      }
+    }
+    $.post(options, (err, resp, data) => {
+      try {
+        if (err) {
+          console.log(`${JSON.stringify(err)}`)
+          console.log(`${$.name} API请求失败，请检查网路重试`)
+        } else {
+          if (data) {
+            data = JSON.parse(data);
+            if (data['retcode'] === 0) {
+              // $.beanCount = data['base'].jdNum;
+            }
+          } else {
+            console.log(`京东服务器返回空数据`)
+          }
         }
       } catch (e) {
         $.logErr(e, resp)
