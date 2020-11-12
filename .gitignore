@@ -1,4 +1,5 @@
 # Default ignored files
 .git
-.idea
-/Loon
+/.idea/
+/node_modules/
+/package-lock.json
