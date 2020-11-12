@@ -18,7 +18,8 @@ JsBox, Node.js用户抓取Cookie说明：
 提取字母数字混合字段, 到&结束, 填入以下单引号内即可.
 */
 
-var cookie = '9aaK3nYzCm2XRPGQrZom277q0B9YeRJKo4uvm2ASFgFSV26I2oQCZCpQJKxZ8m1YjCP7FTd1'
+// var cookie = '9aaK3nYzCm2XRPGQrZom277q0B9YeRJKo4uvm2ASFgFSV26I2oQCZCpQJKxZ8m1YjCP7FTd1'
+var cookie = ''
 
 
 /*
@@ -34,7 +35,7 @@ var cookie = '9aaK3nYzCm2XRPGQrZom277q0B9YeRJKo4uvm2ASFgFSV26I2oQCZCpQJKxZ8m1YjC
  http-request ^https?:\/\/community?\.iqiyi\.com\/ script-path=https://raw.githubusercontent.com/NobyDa/Script/master/iQIYI-DailyBonus/iQIYI.js
 
  [Mitm]
- hostname= ifac*.iqiyi.com
+ hostname= *.iqiyi.com
 
  */
 
